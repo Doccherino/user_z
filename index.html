@@ -69,7 +69,7 @@
 
     <div id="loadingVideoContainer">
         <video id="loadingVideo" autoplay muted playsinline>
-            <source src="veve_animation.mp4" type="video/mp4">
+            <source src="animazione veve_chiara ongarelli_2G2.mp4" type="video/mp4">
             Il tuo browser non supporta il video.
         </video>
         <button id="skipBtn"></button>
@@ -101,6 +101,7 @@ const infectBtn = document.getElementById('infectBtn');
 const skipNarrativeBtn = document.getElementById('skipNarrativeBtn');
 
 let narrativeAborted = false;
+let isEnding = false; // Nuova flag per distinguere intro e finale
 
 // se l'utente clicca mentre il video va o è in corso il dialogo, si attiva l'audio.
 window.addEventListener('click', () => {
@@ -169,7 +170,7 @@ const AudioEngine = {
         const newFreq = 40 - (level * 4);
         const newFilter = 200 - (level * 35);
         this.droneOsc.frequency.exponentialRampToValueAtTime(Math.max(20, newFreq), this.ctx.currentTime + 1);
-        this.droneFilter.frequency.exponentialRampToValueAtTime(Math.max(40, newFilter), this.ctx.currentTime + 1);
+        this.droneFilter.frequency.frequency.exponentialRampToValueAtTime(Math.max(40, newFilter), this.ctx.currentTime + 1);
     },
     playTypeSound() {
         if (!this.ctx) return;
@@ -235,7 +236,8 @@ let cmdGlow = 0;
 async function typeWriter(text) {
     dialogue.textContent = "";
     for (const char of text) {
-        if (narrativeAborted) return;
+        // Se siamo nell'intro e abbiamo abortito, fermiamo la scrittura
+        if (!isEnding && narrativeAborted) return;
         dialogue.textContent += char;
         if (char !== " ") AudioEngine.playTypeSound();
         await new Promise(r => setTimeout(r, 45));
@@ -266,6 +268,7 @@ function startActualGame() {
 
 async function runIntro() {
     narrativeAborted = false;
+    isEnding = false; // Siamo nell'intro
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('skipIntro') === 'true') {
         videoContainer.style.display = 'none';
@@ -571,9 +574,21 @@ function spawnObstacle() {
     obstacle = { x: 850, ...voodooObjects[Math.random() > 0.85 ? 3 : Math.floor(Math.random()*3)] }; 
 }
 function startGame() { gameActive = true; startTime = Date.now(); spawnObstacle(); gameLoop(); }
+
 async function win() {
-    gameActive = false; canvas.style.display = 'none'; ui.style.display = 'none';
-    overlay.style.display = 'flex'; overlay.style.opacity = 1; nameInput.style.display = 'none';
+    gameActive = false; 
+    canvas.style.display = 'none'; 
+    ui.style.display = 'none';
+    
+    // Resettiamo le flag per il finale
+    narrativeAborted = false; 
+    isEnding = true; 
+    
+    overlay.style.display = 'flex'; 
+    overlay.style.opacity = 1; 
+    nameInput.style.display = 'none';
+    skipNarrativeBtn.style.display = 'none'; // Non vogliamo il tasto skip nel finale
+    
     const lines = ["E così ce l'hai fatta. Dieci cristalli di sale... Il debito è pagato, o almeno così credi.",
     "Senti di nuovo il calore nelle dita? Senti il battito che accelera mentre cerchi la via d'uscita?",
     "Ti sei mosso tra le ombre, hai schivato la dolce schiavitù, hai saltato l'oblio...",
@@ -596,7 +611,6 @@ async function win() {
 
     setTimeout(() => {
         overlay.style.backgroundColor = 'black';
-        // dialogue è già display:none
     }, 4000);
 }
 </script>
